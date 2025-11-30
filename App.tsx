@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { HashRouter, Routes, Route, Link, useNavigate, useLocation, useParams } from 'react-router-dom';
-import { MapPin, Phone, User, Calendar, Menu, X, Facebook, Send, CheckCircle, Upload, MessageCircle, Star, Sparkles } from 'lucide-react';
+import { MapPin, Phone, User, Calendar, Menu, X, Facebook, Send, CheckCircle, Upload, MessageCircle, Star, Sparkles, Lock, Eye, Check } from 'lucide-react';
 import { MASSAGES, UPI_ID, TELEGRAM_HANDLE, FACEBOOK_LINK, CITIES, SUPPORT_AGENTS } from './constants';
 import { MassageType, Booking } from './types';
-import { saveBooking, getBookings } from './services/db';
+import { saveBooking, getBookings, updateBookingStatus } from './services/db';
 import ChatSupport from './components/ChatSupport';
 
 // --- COMPONENTS ---
@@ -26,7 +26,7 @@ const Navbar = () => {
           <div className="hidden md:flex items-center space-x-8">
             <Link to="/" className={`font-medium hover:text-yellow-300 transition-colors ${location.pathname === '/' ? 'text-yellow-300 border-b-2 border-yellow-300' : 'text-white'}`}>Home</Link>
             <Link to="/#services" className="text-white hover:text-yellow-300 font-medium transition-colors">Services</Link>
-            <Link to="/admin" className="text-white hover:text-yellow-300 font-medium transition-colors">My Bookings</Link>
+            <Link to="/my-bookings" className={`font-medium hover:text-yellow-300 transition-colors ${location.pathname === '/my-bookings' ? 'text-yellow-300 border-b-2 border-yellow-300' : 'text-white'}`}>My Bookings</Link>
             <a href={`https://t.me/${TELEGRAM_HANDLE}`} target="_blank" rel="noreferrer" className="flex items-center gap-1 bg-white/20 hover:bg-white/30 px-4 py-2 rounded-full font-medium transition-all">
               <Send size={18} /> Support
             </a>
@@ -42,7 +42,7 @@ const Navbar = () => {
         <div className="md:hidden bg-purple-800 border-t border-purple-600">
           <div className="px-2 pt-2 pb-3 space-y-1 sm:px-3">
             <Link to="/" onClick={() => setIsOpen(false)} className="block px-3 py-2 text-base font-medium text-white hover:bg-purple-700">Home</Link>
-            <Link to="/admin" onClick={() => setIsOpen(false)} className="block px-3 py-2 text-base font-medium text-white hover:bg-purple-700">My Bookings</Link>
+            <Link to="/my-bookings" onClick={() => setIsOpen(false)} className="block px-3 py-2 text-base font-medium text-white hover:bg-purple-700">My Bookings</Link>
             <a href={`https://t.me/${TELEGRAM_HANDLE}`} className="block px-3 py-2 text-base font-medium text-yellow-300">Telegram Support</a>
           </div>
         </div>
@@ -57,6 +57,7 @@ const Home = () => {
 
   return (
     <div className="min-h-screen pb-20">
+      {/* Hero Section */}
       <div className="relative bg-purple-900 text-white overflow-hidden">
         <div className="absolute inset-0 bg-gradient-to-br from-purple-900/80 via-pink-900/80 to-red-900/80 z-10"></div>
         <div 
@@ -80,6 +81,7 @@ const Home = () => {
         </div>
       </div>
 
+      {/* Services Grid */}
       <div id="services" className="max-w-7xl mx-auto px-4 py-20 sm:px-6 lg:px-8">
         <div className="text-center mb-16">
           <h2 className="text-4xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-purple-600 to-pink-600 mb-4">Our Premium Collection</h2>
@@ -124,6 +126,7 @@ const Home = () => {
         </div>
       </div>
 
+      {/* Trust & Support Section */}
       <div className="bg-white/80 backdrop-blur-md py-20 border-t border-purple-100">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
            <h2 className="text-3xl font-bold mb-12 text-gray-800">Our Lovely Support Team</h2>
@@ -155,7 +158,9 @@ const Home = () => {
 // Booking Page Component
 const BookingPage = () => {
   const { id } = useParams();
+  
   const navigate = useNavigate();
+  // Finding massage from URL params usually needs more setup, let's grab it from pathname for simplicity if params fail
   const massageId = id || window.location.hash.split('/').pop();
   const massage = MASSAGES.find(m => m.id === massageId);
 
@@ -166,7 +171,7 @@ const BookingPage = () => {
     date: '',
     time: '',
     city: '',
-    gender: 'Female' as 'Female' | 'Male', 
+    gender: 'Female' as 'Female' | 'Male', // Therapist gender
     referral: '',
     utr: '',
   });
@@ -189,6 +194,7 @@ const BookingPage = () => {
     }
   };
 
+  // Calculations
   const hasReferral = formData.referral.trim().length > 0;
   const discountAmount = hasReferral ? massage.price * 0.30 : 0;
   const totalAfterDiscount = massage.price - discountAmount;
@@ -227,7 +233,7 @@ const BookingPage = () => {
       setLoading(false);
       if (success) {
         alert("Booking Submitted Successfully! Wait for confirmation.");
-        navigate('/admin'); 
+        navigate('/my-bookings'); // Redirect to Customer Bookings
       } else {
         alert("Error saving booking. Try again.");
       }
@@ -239,6 +245,7 @@ const BookingPage = () => {
   return (
     <div className="min-h-screen py-12 px-4 sm:px-6 lg:px-8 flex justify-center items-center">
       <div className="w-full max-w-3xl bg-white/90 backdrop-blur-lg rounded-3xl shadow-2xl overflow-hidden border border-white/50">
+        {/* Header */}
         <div className="bg-gradient-to-r from-purple-600 to-pink-500 px-8 py-6 flex justify-between items-center text-white">
           <div>
             <h2 className="text-2xl font-bold">{massage.name}</h2>
@@ -311,6 +318,7 @@ const BookingPage = () => {
                 </div>
               </div>
 
+              {/* Price Summary */}
               <div className="bg-gray-50 p-6 rounded-2xl space-y-3 border border-gray-200 shadow-inner">
                 <div className="flex justify-between text-gray-600">
                    <span>Base Price</span>
@@ -395,8 +403,8 @@ const BookingPage = () => {
   );
 };
 
-// Admin Page
-const AdminPage = () => {
+// Customer View - Status Only
+const CustomerBookings = () => {
   const [bookings, setBookings] = useState<Booking[]>([]);
   
   useEffect(() => {
@@ -406,7 +414,7 @@ const AdminPage = () => {
   return (
     <div className="min-h-screen py-12 px-4 sm:px-6 lg:px-8">
        <div className="max-w-6xl mx-auto">
-          <h2 className="text-3xl font-extrabold mb-8 text-gray-800 drop-shadow-sm">My Bookings & Status</h2>
+          <h2 className="text-3xl font-extrabold mb-8 text-gray-800 drop-shadow-sm">My Bookings Status</h2>
           
           <div className="bg-white/90 backdrop-blur-md shadow-xl overflow-hidden sm:rounded-2xl border border-white/50">
              <ul className="divide-y divide-gray-100">
@@ -419,18 +427,13 @@ const AdminPage = () => {
                           <div>
                              <p className="text-xs font-bold uppercase tracking-wide text-pink-500 mb-1">{booking.date} • {booking.time}</p>
                              <p className="text-xl font-bold text-gray-900">{booking.massageId}</p>
-                             <p className="text-gray-600">{booking.customerName} <span className="text-gray-400 mx-2">|</span> {booking.city}</p>
-                             <div className="flex items-center gap-2 mt-2">
-                               <span className="text-sm bg-gray-100 px-2 py-1 rounded text-gray-600">Pref: {booking.therapistGender} Therapist</span>
-                             </div>
+                             <p className="text-gray-600">{booking.customerName}</p>
                           </div>
                           <div className="text-right bg-white p-4 rounded-xl border border-gray-100 shadow-sm">
                              <span className={`px-4 py-1.5 inline-flex text-xs leading-5 font-bold rounded-full uppercase tracking-wider ${booking.status === 'Confirmed' ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'}`}>
                                 {booking.status}
                              </span>
-                             <p className="mt-3 text-sm font-medium text-gray-600">Advance: <span className="text-green-600">₹{booking.advancePaid}</span></p>
-                             <p className="text-sm font-medium text-gray-600">Due at Center: <span className="text-red-500">₹{booking.totalAmount - booking.advancePaid}</span></p>
-                             <p className="text-xs text-gray-400 mt-2 font-mono">UTR: {booking.utrNumber}</p>
+                             <p className="mt-2 text-xs text-gray-500">Booked on: {new Date(booking.timestamp).toLocaleDateString()}</p>
                           </div>
                        </div>
                     </li>
@@ -443,6 +446,154 @@ const AdminPage = () => {
   );
 };
 
+// Admin View - Password Protected & Full Control
+const AdminDashboard = () => {
+  const [bookings, setBookings] = useState<Booking[]>([]);
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [password, setPassword] = useState('');
+  const [selectedScreenshot, setSelectedScreenshot] = useState<string | null>(null);
+  
+  useEffect(() => {
+    if (isAuthenticated) {
+      getBookings().then(setBookings);
+    }
+  }, [isAuthenticated]);
+
+  const handleLogin = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (password === 'meena@951') {
+      setIsAuthenticated(true);
+    } else {
+      alert("Incorrect Password!");
+    }
+  };
+
+  const handleApprove = async (id: string) => {
+    const success = await updateBookingStatus(id, 'Confirmed');
+    if (success) {
+      setBookings(prev => prev.map(b => b.id === id ? { ...b, status: 'Confirmed' } : b));
+      alert("Booking Approved!");
+    }
+  };
+
+  if (!isAuthenticated) {
+    return (
+      <div className="min-h-screen flex items-center justify-center px-4">
+        <div className="bg-white p-8 rounded-2xl shadow-2xl max-w-md w-full border border-pink-100">
+          <div className="text-center mb-6">
+            <div className="bg-pink-100 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4">
+              <Lock className="text-pink-600 w-8 h-8" />
+            </div>
+            <h2 className="text-2xl font-bold text-gray-800">Admin Login</h2>
+            <p className="text-gray-500">Enter password to manage bookings</p>
+          </div>
+          <form onSubmit={handleLogin} className="space-y-4">
+            <input 
+              type="password" 
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              className="w-full border-2 border-gray-200 rounded-xl p-3 focus:ring-2 focus:ring-pink-400 focus:border-pink-400 outline-none transition-all"
+              placeholder="Enter Password"
+            />
+            <button type="submit" className="w-full bg-gradient-to-r from-purple-600 to-pink-500 text-white font-bold py-3 rounded-xl shadow-lg">
+              Unlock Dashboard
+            </button>
+          </form>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="min-h-screen py-12 px-4 sm:px-6 lg:px-8">
+       <div className="max-w-6xl mx-auto">
+          <div className="flex justify-between items-center mb-8">
+             <h2 className="text-3xl font-extrabold text-gray-800 drop-shadow-sm">Admin Dashboard</h2>
+             <button onClick={() => setIsAuthenticated(false)} className="bg-gray-200 hover:bg-gray-300 px-4 py-2 rounded-lg text-gray-700 font-medium">Logout</button>
+          </div>
+          
+          <div className="bg-white/90 backdrop-blur-md shadow-xl overflow-hidden sm:rounded-2xl border border-white/50">
+             <ul className="divide-y divide-gray-100">
+                {bookings.length === 0 ? (
+                  <li className="p-12 text-center text-gray-500 text-lg">No bookings found in database.</li>
+                ) : (
+                  bookings.map((booking) => (
+                    <li key={booking.id} className="p-6 hover:bg-purple-50 transition-colors">
+                       <div className="flex items-center justify-between flex-wrap gap-6">
+                          <div>
+                             <div className="flex items-center gap-2 mb-1">
+                                <span className={`w-2.5 h-2.5 rounded-full ${booking.status === 'Confirmed' ? 'bg-green-500' : 'bg-yellow-500'}`}></span>
+                                <p className="text-xs font-bold uppercase tracking-wide text-pink-500">{booking.date} • {booking.time}</p>
+                             </div>
+                             <p className="text-xl font-bold text-gray-900">{booking.massageId}</p>
+                             <p className="text-gray-600 font-medium">{booking.customerName}</p>
+                             <p className="text-gray-500 text-sm">{booking.phone} • {booking.city}</p>
+                             <div className="flex items-center gap-2 mt-2">
+                               <span className="text-sm bg-gray-100 px-2 py-1 rounded text-gray-600">Pref: {booking.therapistGender}</span>
+                               <span className="text-sm bg-gray-100 px-2 py-1 rounded text-gray-600 font-mono">UTR: {booking.utrNumber}</span>
+                             </div>
+                          </div>
+                          
+                          <div className="flex flex-col items-end gap-3">
+                             <div className="text-right">
+                                <p className="text-sm font-medium text-gray-600">Paid: <span className="text-green-600 font-bold">₹{booking.advancePaid}</span></p>
+                                <p className="text-sm font-medium text-gray-600">Due: <span className="text-red-500 font-bold">₹{booking.totalAmount - booking.advancePaid}</span></p>
+                             </div>
+                             
+                             <div className="flex gap-2">
+                               {booking.paymentScreenshot && (
+                                 <button 
+                                   onClick={() => setSelectedScreenshot(booking.paymentScreenshot!)}
+                                   className="flex items-center gap-1 bg-blue-100 text-blue-700 px-3 py-2 rounded-lg hover:bg-blue-200 transition-colors text-sm font-semibold"
+                                 >
+                                   <Eye size={16} /> View Proof
+                                 </button>
+                               )}
+                               
+                               {booking.status === 'Pending' ? (
+                                 <button 
+                                   onClick={() => handleApprove(booking.id)}
+                                   className="flex items-center gap-1 bg-green-500 text-white px-4 py-2 rounded-lg hover:bg-green-600 shadow-md transition-all text-sm font-bold"
+                                 >
+                                   <Check size={16} /> Approve
+                                 </button>
+                               ) : (
+                                 <span className="flex items-center gap-1 bg-green-100 text-green-800 px-4 py-2 rounded-lg font-bold text-sm border border-green-200">
+                                   <CheckCircle size={16} /> Confirmed
+                                 </span>
+                               )}
+                             </div>
+                          </div>
+                       </div>
+                    </li>
+                  ))
+                )}
+             </ul>
+          </div>
+       </div>
+
+       {/* Screenshot Modal */}
+       {selectedScreenshot && (
+         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4" onClick={() => setSelectedScreenshot(null)}>
+           <div className="relative max-w-lg w-full bg-white p-2 rounded-2xl shadow-2xl animate-fade-in-up" onClick={e => e.stopPropagation()}>
+             <button 
+               onClick={() => setSelectedScreenshot(null)}
+               className="absolute -top-4 -right-4 bg-white text-gray-900 p-2 rounded-full shadow-lg hover:bg-gray-100"
+             >
+               <X size={20} />
+             </button>
+             <img src={selectedScreenshot} alt="Payment Proof" className="w-full rounded-xl" />
+             <div className="text-center p-4">
+                <p className="font-bold text-gray-700">Payment Screenshot</p>
+             </div>
+           </div>
+         </div>
+       )}
+    </div>
+  );
+};
+
+// Main App Layout
 const Layout = () => {
   const [showSupport, setShowSupport] = useState(false);
   return (
@@ -451,8 +602,11 @@ const Layout = () => {
       <Routes>
         <Route path="/" element={<Home />} />
         <Route path="/book/:id" element={<BookingPage />} />
-        <Route path="/admin" element={<AdminPage />} />
+        <Route path="/my-bookings" element={<CustomerBookings />} />
+        <Route path="/admin" element={<AdminDashboard />} />
       </Routes>
+
+      {/* Persistent Chat Support Button */}
       <div className="fixed bottom-6 right-6 z-50">
          {!showSupport ? (
            <button 
@@ -476,4 +630,4 @@ export default function App() {
       <Layout />
     </HashRouter>
   );
-}
+    }
